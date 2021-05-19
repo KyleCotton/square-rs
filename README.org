@@ -1,0 +1,4 @@
+#+OPTIONS: TOC:nil
+
+* Square-rs
+  A crate aiming to be a idiomatic and simple to use library for the [[https://developer.squareup.com/][Square API]].
