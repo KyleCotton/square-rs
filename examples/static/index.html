@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+    <head>
+    <!-- Link to the SqPaymentForm library. This has to come from square -->
+    <!-- TODO: remove the `sandbox` for production -->
+    <script type="text/javascript" src="https://js.squareupsandbox.com/v2/paymentform">
+    </script>
+
+    <!-- link to the local custom styles for SqPaymentForm -->
+    <link rel="stylesheet" type="text/css" href="sqpaymentform.css">
+
+    </head>
+    <body>
+      Get ready for your first payment with Square!
+    <div id="form-container">
+        <div id="sq-card-number"></div>
+        <div class="third" id="sq-expiration-date"></div>
+        <div class="third" id="sq-cvv"></div>
+        <div class="third" id="sq-postal-code"></div>
+        <input type="number" name="number_hours" id="number_hours" value="Number of Hours">
+        <button id="sq-creditcard" class="button-credit-card" onclick="onGetCardNonce(event)">Pay</button>
+   </div>
+
+    <!-- Import the script for the SqPaymentForm -->
+    <!-- This has to be in the bodty as the DOM must be fully loaded -->
+    <script type="text/javascript" src="payment_form.js">
+    </script>
+
+    </body>
+</html>
