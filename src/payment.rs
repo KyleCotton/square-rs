@@ -29,21 +29,21 @@ impl SquareClient {
 #[derive(Serialize, Debug, Deserialize)]
 pub struct Payment {
     #[serde(rename(serialize = "source_id"))]
-    nonce: String,
+    source_id: String,
     idempotency_key: String,
     amount_money: Money,
 }
 
 /// The [PaymentBuilder](PaymentBuilder)
 pub struct PaymentBuilder {
-    nonce: Option<String>,
+    source_id: Option<String>,
     amount_money: Option<Money>,
 }
 
 impl Default for PaymentBuilder {
     fn default() -> Self {
         Self {
-            nonce: None,
+            source_id: None,
             amount_money: None,
         }
     }
@@ -52,12 +52,6 @@ impl Default for PaymentBuilder {
 impl PaymentBuilder {
     pub fn new() -> Self {
         Default::default()
-    }
-
-    pub fn nonce(mut self, nonce: String) -> Self {
-        self.nonce = Some(nonce);
-
-        self
     }
 
     pub fn source_id(mut self, source_id: String) -> Self {
@@ -73,7 +67,7 @@ impl PaymentBuilder {
     }
 
     pub async fn build(&self) -> Result<Payment, PaymentBuildError> {
-        let nonce = match &self.nonce {
+        let source_id = match &self.source_id {
             Some(n) => n.clone(),
             None => return Err(PaymentBuildError),
         };
@@ -88,7 +82,7 @@ impl PaymentBuilder {
         };
 
         Ok(Payment {
-            nonce,
+            source_id,
             idempotency_key,
             amount_money,
         })
