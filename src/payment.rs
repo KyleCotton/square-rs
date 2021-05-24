@@ -10,6 +10,7 @@ use crate::money::{Currency, Money};
 use crate::response::SquareResponse;
 
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 impl SquareClient {
     /// Create a payment with the given [Payment](Payment) to the Square API
@@ -36,7 +37,6 @@ pub struct Payment {
 /// The [PaymentBuilder](PaymentBuilder)
 pub struct PaymentBuilder {
     nonce: Option<String>,
-    idempotency_key: Option<String>,
     amount_money: Option<Money>,
 }
 
@@ -44,7 +44,6 @@ impl Default for PaymentBuilder {
     fn default() -> Self {
         Self {
             nonce: None,
-            idempotency_key: None,
             amount_money: None,
         }
     }
@@ -61,8 +60,8 @@ impl PaymentBuilder {
         self
     }
 
-    pub fn idempotency_key(mut self, idempotency_key: String) -> Self {
-        self.idempotency_key = Some(idempotency_key);
+    pub fn source_id(mut self, source_id: String) -> Self {
+        self.source_id = Some(source_id);
 
         self
     }
@@ -79,10 +78,9 @@ impl PaymentBuilder {
             None => return Err(PaymentBuildError),
         };
 
-        let idempotency_key = match &self.idempotency_key {
-            Some(n) => n.clone(),
-            None => return Err(PaymentBuildError),
-        };
+        // The idempotency key just needs to be a random string
+        // it is advised to use a v4 uuid by stripe
+        let idempotency_key = Uuid::new_v4().to_string();
 
         let amount_money = match &self.amount_money {
             Some(n) => n.clone(),
