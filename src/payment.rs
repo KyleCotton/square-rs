@@ -10,6 +10,7 @@ use crate::money::{Currency, Money};
 use crate::response::SquareResponse;
 
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 impl SquareClient {
     /// Create a payment with the given [Payment](Payment) to the Square API
@@ -28,23 +29,21 @@ impl SquareClient {
 #[derive(Serialize, Debug, Deserialize)]
 pub struct Payment {
     #[serde(rename(serialize = "source_id"))]
-    nonce: String,
+    source_id: String,
     idempotency_key: String,
     amount_money: Money,
 }
 
 /// The [PaymentBuilder](PaymentBuilder)
 pub struct PaymentBuilder {
-    nonce: Option<String>,
-    idempotency_key: Option<String>,
+    source_id: Option<String>,
     amount_money: Option<Money>,
 }
 
 impl Default for PaymentBuilder {
     fn default() -> Self {
         Self {
-            nonce: None,
-            idempotency_key: None,
+            source_id: None,
             amount_money: None,
         }
     }
@@ -55,14 +54,8 @@ impl PaymentBuilder {
         Default::default()
     }
 
-    pub fn nonce(mut self, nonce: String) -> Self {
-        self.nonce = Some(nonce);
-
-        self
-    }
-
-    pub fn idempotency_key(mut self, idempotency_key: String) -> Self {
-        self.idempotency_key = Some(idempotency_key);
+    pub fn source_id(mut self, source_id: String) -> Self {
+        self.source_id = Some(source_id);
 
         self
     }
@@ -74,15 +67,14 @@ impl PaymentBuilder {
     }
 
     pub async fn build(&self) -> Result<Payment, PaymentBuildError> {
-        let nonce = match &self.nonce {
+        let source_id = match &self.source_id {
             Some(n) => n.clone(),
             None => return Err(PaymentBuildError),
         };
 
-        let idempotency_key = match &self.idempotency_key {
-            Some(n) => n.clone(),
-            None => return Err(PaymentBuildError),
-        };
+        // The idempotency key just needs to be a random string
+        // it is advised to use a v4 uuid by stripe
+        let idempotency_key = Uuid::new_v4().to_string();
 
         let amount_money = match &self.amount_money {
             Some(n) => n.clone(),
@@ -90,7 +82,7 @@ impl PaymentBuilder {
         };
 
         Ok(Payment {
-            nonce,
+            source_id,
             idempotency_key,
             amount_money,
         })

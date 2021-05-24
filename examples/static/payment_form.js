@@ -1,104 +1,119 @@
-const API_ENDPOINT = "http://localhost:8080/process-payment";
-const idempotency_key = uuidv4();
+// TODO: Update the paramaters for the deployment
+const api_endpoint = "http://localhost:8080/process-payment";
+const application_id = "sandbox-sq0idb-5P1gz1EE27qC-Kck4BOWxg";
+const location_id = "LG3RD5KD8AZ7X";
 
-const paymentForm = new SqPaymentForm({
-    // TODO: Update the applicationId with the production value
-    applicationId: "sandbox-sq0idb-5P1gz1EE27qC-Kck4BOWxg",
-    inputClass: 'sq-input',
-    autoBuild: false,
-    // Customize the CSS for SqPaymentForm iframe elements
-    inputStyles: [{
-        fontSize: '16px',
-        lineHeight: '24px',
-        padding: '16px',
-        placeholderColor: '#a0a0a0',
-        backgroundColor: 'transparent',
-    }],
-    // Initialize the credit card placeholders
-    cardNumber: {
-        elementId: 'sq-card-number',
-        placeholder: 'Card Number'
-    },
-    cvv: {
-        elementId: 'sq-cvv',
-        placeholder: 'CVV'
-    },
-    expirationDate: {
-        elementId: 'sq-expiration-date',
-        placeholder: 'MM/YY'
-    },
-    postalCode: {
-        elementId: 'sq-postal-code',
-        placeholder: 'Postal'
-    },
-    // SqPaymentForm callback functions
-    callbacks: {
-    /*
-    * callback function: cardNonceResponseReceived
-    * Triggered when: SqPaymentForm completes a card nonce request
-    */
-        cardNonceResponseReceived: function (errors, nonce, cardData) {
-            if (errors) {
-            // Log errors from nonce generation to the browser developer console.
-                console.error('Encountered errors:');
-                errors.forEach(function (error) {
-                console.error('  ' + error.message);
-                });
-                alert('Encountered errors, check browser developer console for more details');
-                return;
-            }
+async function initializeCard(payments) {
+    const card = await payments.card();
+    await card.attach('#card-container');
+    return card;
+ }
 
-            // alert(`The generated nonce is:\n${nonce}`);
+document.addEventListener('DOMContentLoaded', async function () {
+    if (!window.Square) {
+        throw new Error('Square.js failed to load properly');
+    }
 
-            fetch(API_ENDPOINT, {
-                method: 'POST',
-                headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    nonce: nonce,
-                    idempotency_key: idempotency_key,
-                    location_id: "LAG1Z49981CBB",
-                    amount: document.getElementById('number_hours').value
-                })
-            })
-            .catch(err => {
-                alert('Network error: ' + err);
-            })
-            .then(response => {
-                if (!response.ok) {
-                    return response.json().then(
-                    errorInfo => Promise.reject(errorInfo));
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log(data);
-                alert('Payment complete successfully!\nCheck browser developer console for more details');
-            })
-            .catch(err => {
-                console.error(err);
-                alert('Payment failed to complete!\nCheck browser developer console for more details');
-            });
+    const payments = window.Square.payments(application_id, location_id);
+    let card;
+    try {
+        card = await initializeCard(payments);
+    } catch (e) {
+        console.error('Initializing Card failed', e);
+        return;
+    }
+
+    // Step 5.2: create card payment
+    async function handlePaymentMethodSubmission(event, paymentMethod) {
+        event.preventDefault();
+        try {
+            // disable the submit button as we await tokenization and make a
+            // payment request.
+            cardButton.disabled = true;
+            const token = await tokenize(paymentMethod);
+            const paymentResults = await createPayment(token);
+            displayPaymentResults('SUCCESS');
+
+            console.debug('Payment Success', paymentResults);
+        } catch (e) {
+            cardButton.disabled = false;
+            displayPaymentResults('FAILURE');
+            console.error(e.message);
         }
     }
+
+    const cardButton = document.getElementById(
+        'card-button'
+    );
+
+    cardButton.addEventListener('click', async function (event) {
+        await handlePaymentMethodSubmission(event, card);
+    });
 });
 
-paymentForm.build();
 
-//Generate a random UUID as an idempotency key for the payment request
-// length of idempotency_key should be less than 45
-function uuidv4() {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-        var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-        return v.toString(16);
+// Call this function to send a payment token, buyer name, and other details
+// to the project server code so that a payment can be created with
+// Payments API
+async function createPayment(token) {
+    const body = JSON.stringify({
+        location_id,
+        source_id: token,
+        amount: "69",
     });
+
+    const paymentResponse = await fetch(api_endpoint, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body,
+    });
+
+   if (!paymentResponse.ok) {
+        const errorBody = await paymentResponse.text();
+        throw new Error(errorBody);
+   }
+
+   return paymentResponse.json();
 }
 
-function onGetCardNonce(event) {
-    // Don't submit the form until SqPaymentForm returns with a nonce
-    event.preventDefault();
-    // Request a nonce from the SqPaymentForm object
-    paymentForm.requestCardNonce();
+// This function tokenizes a payment method.
+// The ‘error’ thrown from this async function denotes a failed tokenization,
+// which is due to buyer error (such as an expired card). It is up to the
+// developer to handle the error and provide the buyer the chance to fix
+// their mistakes.
+async function tokenize(paymentMethod) {
+    const tokenResult = await paymentMethod.tokenize();
+    if (tokenResult.status === 'OK') {
+        return tokenResult.token;
+    } else {
+        let errorMessage = `Tokenization failed-status: ${tokenResult.status}`;
+
+        if (tokenResult.errors) {
+            errorMessage += ` and errors: ${JSON.stringify(
+                tokenResult.errors
+            )}`;
+        }
+
+        throw new Error(errorMessage);
+    }
+}
+
+// Helper method for displaying the Payment Status on the screen.
+// status is either SUCCESS or FAILURE;
+function displayPaymentResults(status) {
+    const statusContainer = document.getElementById(
+        'payment-status-container'
+    );
+
+    if (status === 'SUCCESS') {
+        statusContainer.classList.remove('is-failure');
+        statusContainer.classList.add('is-success');
+    } else {
+        statusContainer.classList.remove('is-success');
+        statusContainer.classList.add('is-failure');
+    }
+
+    statusContainer.style.visibility = 'visible';
 }

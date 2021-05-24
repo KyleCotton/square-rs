@@ -1,30 +1,31 @@
 <!DOCTYPE html>
 <html>
     <head>
-    <!-- Link to the SqPaymentForm library. This has to come from square -->
+    <!-- <link href="/app.css" rel="stylesheet" /> -->
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+    <meta content="utf-8" http-equiv="encoding">
+
+    <!-- Source the Square Payments form, this must be served from Square, cannot be reflected -->
     <!-- TODO: remove the `sandbox` for production -->
-    <script type="text/javascript" src="https://js.squareupsandbox.com/v2/paymentform">
-    </script>
+    <!-- <script type="text/javascript" src="https://js.squareupsandbox.com/v2/paymentform"></script> -->
+    <script type="text/javascript" src="https://sandbox.web.squarecdn.com/v1/square.js"></script>
 
     <!-- link to the local custom styles for SqPaymentForm -->
-    <link rel="stylesheet" type="text/css" href="sqpaymentform.css">
+    <!-- <link rel="stylesheet" type="text/css" href="sqpaymentform.css"> -->
+    <link rel="stylesheet" type="text/css" href="app.css">
 
     </head>
     <body>
       Get ready for your first payment with Square!
-    <div id="form-container">
-        <div id="sq-card-number"></div>
-        <div class="third" id="sq-expiration-date"></div>
-        <div class="third" id="sq-cvv"></div>
-        <div class="third" id="sq-postal-code"></div>
-        <input type="number" name="number_hours" id="number_hours" value="Number of Hours">
-        <button id="sq-creditcard" class="button-credit-card" onclick="onGetCardNonce(event)">Pay</button>
-   </div>
 
-    <!-- Import the script for the SqPaymentForm -->
-    <!-- This has to be in the bodty as the DOM must be fully loaded -->
-    <script type="text/javascript" src="payment_form.js">
-    </script>
+    <form id="payment-form">
+        <div id="card-container"></div>
+        <button id="card-button" type="button">Pay $1.00</button>
+    </form>
+    <div id="payment-status-container"></div>
+
+    <!-- Include the payment form script, to verify and send off the card details to be processed  -->
+    <script type="text/javascript" src="payment_form.js"></script>
 
     </body>
 </html>

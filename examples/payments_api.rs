@@ -3,9 +3,9 @@ use square_rs::error::PaymentBuildError;
 use square_rs::money::Currency;
 use square_rs::payment::PaymentBuilder;
 
-use std::env;
 use actix_web::{middleware::Logger, post, web, App, HttpResponse, HttpServer, Responder};
 use serde::{Deserialize, Serialize};
+use std::env;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -45,8 +45,8 @@ impl AppState {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PaymentForm {
-    nonce: String,
-    idempotency_key: String,
+    source_id: String,
+    // idempotency_key: String,
     location_id: String,
     amount: String,
 }
@@ -67,27 +67,29 @@ async fn process_payment(
     state: web::Data<AppState>,
     form: web::Json<PaymentForm>,
 ) -> impl Responder {
+    println!("Payment Process Called");
+
     // Get access to the square client
     let client = &state.client;
 
     // Serialize the square payment form from the request
     let payment_form = form.into_inner();
 
-    // The total amount is the number of hours multiplied by
-    //   the cost per hour. Multipled by 100 since the value
-    //   is given in the lowest denomination so pence.
+    // The amount must be given in the smallest denomination, convert to pence.
     let amount = payment_form.get_price() * 100;
 
     // Buld a payment using the infomation from the form
     let payment = match PaymentBuilder::new()
         .amount(amount as i64, Currency::GBP)
-        .nonce(payment_form.nonce)
-        .idempotency_key(payment_form.idempotency_key)
+        .source_id(payment_form.source_id)
         .build()
         .await
     {
         Ok(p) => p,
-        Err(e) => return HttpResponse::BadRequest().json(e),
+        Err(e) => {
+            println!("Failed to build payment");
+            return HttpResponse::BadRequest().json(e);
+        }
     };
 
     // Create the payment and check the response
@@ -95,6 +97,9 @@ async fn process_payment(
         Ok(r) => HttpResponse::Ok()
             .set_header("Access-Control-Allow-Origin", "*")
             .json(r),
-        Err(_) => HttpResponse::BadRequest().json(PaymentBuildError),
+        Err(_) => {
+            println!("Failed to create payment");
+            HttpResponse::BadRequest().json(PaymentBuildError)
+        }
     }
 }
