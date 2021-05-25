@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+    <head>
+    <!-- <link href="/app.css" rel="stylesheet" /> -->
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+    <meta content="utf-8" http-equiv="encoding">
+
+    <!-- Source the Square Payments form, this must be served from Square, cannot be reflected -->
+    <!-- TODO: remove the `sandbox` for production -->
+    <!-- <script type="text/javascript" src="https://js.squareupsandbox.com/v2/paymentform"></script> -->
+    <script type="text/javascript" src="https://sandbox.web.squarecdn.com/v1/square.js"></script>
+
+    <!-- link to the local custom styles for SqPaymentForm -->
+    <!-- <link rel="stylesheet" type="text/css" href="sqpaymentform.css"> -->
+    <link rel="stylesheet" type="text/css" href="app.css">
+
+    </head>
+    <body>
+      Get ready for your first payment with Square!
+
+    <form id="payment-form">
+        <div id="card-container"></div>
+        <button id="card-button" type="button">Pay $1.00</button>
+    </form>
+    <div id="payment-status-container"></div>
+
+    <!-- Include the payment form script, to verify and send off the card details to be processed  -->
+    <script type="text/javascript" src="payment_form_sca.js"></script>
+
+    </body>
+</html>
