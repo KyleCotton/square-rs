@@ -32,12 +32,15 @@ pub struct Payment {
     source_id: String,
     idempotency_key: String,
     amount_money: Money,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    verification_token: Option<String>,
 }
 
 /// The [PaymentBuilder](PaymentBuilder)
 pub struct PaymentBuilder {
     source_id: Option<String>,
     amount_money: Option<Money>,
+    verification_token: Option<String>,
 }
 
 impl Default for PaymentBuilder {
@@ -45,6 +48,7 @@ impl Default for PaymentBuilder {
         Self {
             source_id: None,
             amount_money: None,
+            verification_token: None,
         }
     }
 }
@@ -66,6 +70,12 @@ impl PaymentBuilder {
         self
     }
 
+    pub fn verification_token(mut self, token: String) -> Self {
+        self.verification_token = Some(token);
+
+        self
+    }
+
     pub async fn build(&self) -> Result<Payment, PaymentBuildError> {
         let source_id = match &self.source_id {
             Some(n) => n.clone(),
@@ -81,10 +91,13 @@ impl PaymentBuilder {
             None => return Err(PaymentBuildError),
         };
 
+        let verification_token = self.verification_token.clone();
+
         Ok(Payment {
             source_id,
             idempotency_key,
             amount_money,
+            verification_token,
         })
     }
 }
